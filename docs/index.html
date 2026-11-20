@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Which Pages Should an Editor Refresh First? A Client-Grouped Ranking Study</title>
+<meta name="description" content="A decision-support ranking for content refresh, tested on 30,000 pages from 32 clients with a client-grouped split, compared against a transparent CTR rule, with leakage checks and an action playbook.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbfaf7; --surface: #ffffff; --text: #1d2228; --muted: #5b6670; --line: #e3e0d8;
+    --accent: #3b6ea8; --accent-soft: #e8f0f9; --warn: #9a5b12; --warn-soft: #fbf1e3;
+    --good: #2f7a52; --good-soft: #e6f3ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15181c; --surface: #1c2026; --text: #e7e9ec; --muted: #a2abb5; --line: #2e343c;
+      --accent: #7fb0e8; --accent-soft: #1e2b3a; --warn: #e3a95c; --warn-soft: #2e2416;
+      --good: #6cc496; --good-soft: #17291f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15181c; --surface: #1c2026; --text: #e7e9ec; --muted: #a2abb5; --line: #2e343c;
+    --accent: #7fb0e8; --accent-soft: #1e2b3a; --warn: #e3a95c; --warn-soft: #2e2416;
+    --good: #6cc496; --good-soft: #17291f;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 18px/1.65 "Source Serif 4", Georgia, serif; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; display: grid;
+          grid-template-columns: 1fr; gap: 40px; }
+  @media (min-width: 1000px) { .wrap { grid-template-columns: 220px minmax(0, 720px); } }
+  nav.toc { display: none; }
+  @media (min-width: 1000px) {
+    nav.toc { display: block; position: sticky; top: 24px; align-self: start; padding-top: 120px;
+              font: 14px/1.5 Inter, system-ui, sans-serif; }
+    nav.toc a { display: block; color: var(--muted); text-decoration: none; padding: 3px 0 3px 10px;
+                border-left: 2px solid var(--line); }
+    nav.toc a:hover { color: var(--accent); border-left-color: var(--accent); }
+  }
+  main { min-width: 0; padding-bottom: 80px; }
+  header.top { padding: 64px 0 8px; }
+  .kicker { font: 600 13px/1 Inter, system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase;
+            color: var(--accent); }
+  h1 { font: 700 clamp(28px, 4.4vw, 40px)/1.15 Inter, system-ui, sans-serif; margin: 14px 0 12px;
+       letter-spacing: -0.01em; }
+  .byline { font: 15px/1.5 Inter, system-ui, sans-serif; color: var(--muted); }
+  .byline a { color: var(--muted); }
+  h2 { font: 700 24px/1.25 Inter, system-ui, sans-serif; margin: 56px 0 12px; padding-top: 8px;
+       border-top: 1px solid var(--line); }
+  h2 .num { color: var(--muted); font-weight: 600; margin-right: 8px; }
+  h3 { font: 600 18px/1.3 Inter, system-ui, sans-serif; margin: 28px 0 8px; }
+  p { margin: 0 0 16px; }
+  a { color: var(--accent); }
+  .abstract { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+              padding: 20px 22px; margin: 28px 0 8px; }
+  .abstract h2 { border: 0; margin: 0 0 8px; padding: 0; font-size: 15px; letter-spacing: .08em;
+                 text-transform: uppercase; color: var(--muted); }
+  .abstract p { margin: 0; }
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 24px 0; }
+  @media (min-width: 640px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .stat b { display: block; font: 700 26px/1.1 Inter, system-ui, sans-serif; }
+  .stat span { font: 13px/1.35 Inter, system-ui, sans-serif; color: var(--muted); }
+  figure { margin: 24px 0; }
+  figure img { width: 100%; height: auto; display: block; background: #fff; border: 1px solid var(--line);
+               border-radius: 8px; }
+  figcaption { font: 14px/1.5 Inter, system-ui, sans-serif; color: var(--muted); margin-top: 8px; }
+  figcaption b { color: var(--text); }
+  .table-wrap { overflow-x: auto; margin: 16px 0 20px; }
+  table { border-collapse: collapse; width: 100%; font: 15px/1.4 Inter, system-ui, sans-serif; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.hl td { background: var(--accent-soft); }
+  .note { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 12px 16px;
+          border-radius: 0 8px 8px 0; margin: 20px 0; font-size: 17px; }
+  .good { border-left-color: var(--good); background: var(--good-soft); }
+  .tag { display: inline-block; font: 600 12px/1 Inter, system-ui, sans-serif; padding: 4px 7px;
+         border-radius: 4px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+  .tag.opp { background: var(--warn-soft); color: var(--warn); }
+  .tag.ok { background: var(--good-soft); color: var(--good); }
+  code { font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--accent-soft);
+         padding: 1px 5px; border-radius: 4px; word-break: break-word; }
+  ol, ul { padding-left: 22px; margin: 0 0 16px; }
+  li { margin-bottom: 6px; }
+  footer { font: 14px/1.6 Inter, system-ui, sans-serif; color: var(--muted); border-top: 1px solid var(--line);
+           margin-top: 48px; padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" aria-label="Contents">
+    <a href="#abstract">Abstract</a>
+    <a href="#introduction">1. Introduction</a>
+    <a href="#data">2. Data</a>
+    <a href="#methodology">3. Methodology</a>
+    <a href="#results">4. Results</a>
+    <a href="#limitations">5. Limitations</a>
+    <a href="#recommendations">6. Recommendations</a>
+    <a href="#reproducibility">7. Reproducibility</a>
+    <a href="#acknowledgments">8. Acknowledgments</a>
+  </nav>
+
+  <main>
+    <header class="top">
+      <div class="kicker">FlyRank ML Internship · Capstone research paper · Lane 2: Refresh</div>
+      <h1>Which pages should an editor refresh first? A client-grouped ranking study on 30,000 pages</h1>
+      <div class="byline">Bengüsu İlhan · November 2026 · <a href="https://github.com/begs44/flyrank-ml">github.com/begs44/flyrank-ml</a></div>
+    </header>
+
+    <section class="abstract" id="abstract">
+      <h2>Abstract</h2>
+      <p>Content teams cannot review thousands of pages at once, so this study asks which pages are worth reviewing first. It uses 30,000 pseudonymized pages from 32 clients (trailing 90-day search metrics) and labels a page "declining" when its impressions fell by more than 20% between the last two 30-day windows (base rate 54%). A transparent rule (low click-through rate for a page's ranking position) was built first as the baseline, then compared with Logistic Regression and Gradient Boosting under 5-fold cross-validation grouped by client, so every client is scored by a model that never saw it. In the top 50 pages per fold, 80–81% were declining for the learned models against 75% for the rule and 57% for a random order. The traffic features overlap the label window, so the ranking describes decline already in progress rather than forecasting it, and the output is offered as decision support for a weekly human-reviewed triage list, not as an automated system.</p>
+    </section>
+
+    <div class="stats">
+      <div class="stat"><b>30,000</b><span>pages, 32 pseudonymized clients</span></div>
+      <div class="stat"><b>0.81 vs 0.75</b><span>P@50, model vs CTR rule (client-grouped)</span></div>
+      <div class="stat"><b>0.94 → 0.81</b><span>same model, random vs grouped split</span></div>
+      <div class="stat"><b>0.78</b><span>decline rate in the weekly batch of 50 (random: 0.60)</span></div>
+    </div>
+
+    <h2 id="introduction"><span class="num">1</span>Introduction</h2>
+    <p>Picture an editor on Monday morning with capacity for about 50 page reviews and a site of several thousand pages. Some of those pages are quietly losing search visibility; most are fine. Picking pages at random wastes roughly half of the week, because about half of the pages are not declining at all.</p>
+    <p>The decision this work supports is narrow on purpose: <em>which pages go into this week's review batch, and what should the editor check first on each one?</em> A wrong call has two costs. A false alarm spends editor time on a healthy page. A miss lets a visible page keep slipping.</p>
+    <p>The obvious approach is a rule of thumb such as "refresh pages older than six months". Section 4 shows why that rule does not hold in this data, and what does.</p>
+
+    <h2 id="data"><span class="num">2</span>Data</h2>
+    <p><b>Source.</b> The starter slice of the FlyRank ML Internship dataset: 30,000 content items (one row per page), 32 pseudonymized clients, 44 columns. Search metrics come from Google Search Console and site analytics, aggregated over a trailing 90-day window ending at export time, plus two 30-day comparison windows. The full warehouse release (about 79 million daily rows) was explored during the internship, but every model and number on this page comes from the 30,000-page slice.</p>
+    <p><b>Coverage.</b> Content age 90–564 days; three content types; pages per client range from 3 to 7,008 (median 567). One client holds 23% of all pages, which matters for validation (Section 3).</p>
+    <p><b>Cleaning.</b> An average position of 0 means "no data", so it was set to missing (1,205 rows). Word count is missing for 7,699 rows, all of one content type, so missingness became its own flag instead of a fill with 0. Rate columns are percentages (a CTR of 0.21 means 0.21%).</p>
+    <p><b>Excluded on purpose.</b> <code>trend_direction</code>, <code>trend_pct</code> and every <code>*_last_30d</code> / <code>*_prev_30d</code> column (the label is computed from them); <code>content_id</code> and <code>client_id</code> (pseudonyms, used only for grouping); and the dataset's pre-made tier buckets (existing-system decisions). No client names, URLs or search queries appear anywhere in this work.</p>
+
+    <h2 id="methodology"><span class="num">3</span>Methodology</h2>
+    <h3>Label</h3>
+    <p>A page is <b>declining</b> when its impressions in the last 30 days were more than 20% below the previous 30 days (<code>trend_direction == "down"</code>). 16,262 of 30,000 pages (54.2%) qualify. This is a proxy for "worth a refresh", not a measure of lost revenue.</p>
+    <h3>Signal audit before modeling</h3>
+    <p>Each candidate signal was checked with a bucket table (n printed), inside clients, and given a verdict:</p>
+    <div class="table-wrap"><table>
+      <tr><th>Signal / belief</th><th>Evidence</th><th>Verdict</th></tr>
+      <tr><td>Low CTR for its position → decline</td><td>lowest CTR quintile 0.74 vs highest 0.49 (n ≈ 2,400 each); holds in 14 of 17 clients</td><td><span class="tag ok">CONFIRMED</span></td></tr>
+      <tr><td>Older pages decay more</td><td>90–179 days 0.63 vs 365–544 days 0.42; most clients agree</td><td><span class="tag opp">OPPOSITE</span></td></tr>
+      <tr><td>Thin pages (&lt;1,200 words, visible) decay more</td><td>0.54 vs base 0.54 (95% CI 0.43–0.64, n = 82)</td><td><span class="tag opp">FALSE</span></td></tr>
+      <tr><td>Stale (180+ days, visible) → decline</td><td>16 of 17 declined, but n = 17</td><td><span class="tag">MIXED</span></td></tr>
+      <tr><td>More impressions → more decline</td><td>jump from &lt;10 to 10+ impressions, then flat</td><td><span class="tag">MIXED</span></td></tr>
+    </table></div>
+    <h3>Baseline</h3>
+    <p>A rule a person can read: for pages with at least 500 impressions at positions 1–20, score = CTR shortfall versus the median CTR of pages at the same position band × log10(impressions). The position medians are computed from training folds only. It uses three columns and no fitted weights.</p>
+    <h3>Models and features</h3>
+    <p>Logistic Regression (C = 0.5, scaled) and Histogram Gradient Boosting (depth 4, 300 iterations, min leaf 100), plus a depth-3 decision tree and a random-order floor. Features: 19 numeric (log-scaled 90-day impressions, clicks, sessions and AI-referred sessions; days with impressions or sessions; CTR; position; engagement; scroll; age; days since update; keyword volume, competition and CPC; two missingness flags) and 3 categorical (content type, intent, competition level). Pages are ranked by predicted probability.</p>
+    <h3>Validation design</h3>
+    <p><b>5-fold cross-validation grouped by client</b>: every client sits entirely in train or entirely in test. The question it answers is the deployment question: <em>does the ranking work on a client the model has never seen?</em> The headline metric is <b>precision@50</b> (share of the top 50 pages per test fold that were declining), always shown next to the base rate. Seed 42 throughout.</p>
+    <h3>Leakage checks</h3>
+    <ul>
+      <li>A guard stops the run if any excluded column enters the feature list.</li>
+      <li>No single feature separates the label suspiciously well (highest single-feature ROC-AUC: 0.59).</li>
+      <li>Harness test: adding <code>trend_pct</code> on purpose sends P@50 and ROC-AUC to 1.0, so the setup would catch a leak like that.</li>
+      <li>Window check: a model on static metadata alone (Section 4, Figure 3) shows how much skill comes from the overlapping traffic windows.</li>
+    </ul>
+
+    <h2 id="results"><span class="num">4</span>Results</h2>
+    <h3>Learned models beat the rule, modestly</h3>
+    <div class="table-wrap"><table>
+      <tr><th>Method (client-grouped 5-fold)</th><th class="n">P@50</th><th class="n">fold sd</th><th class="n">ROC-AUC</th></tr>
+      <tr><td>Random order</td><td class="n">0.57</td><td class="n">0.13</td><td class="n">0.50</td></tr>
+      <tr><td>CTR rule (baseline)</td><td class="n">0.75</td><td class="n">0.09</td><td class="n">0.63</td></tr>
+      <tr class="hl"><td>Logistic Regression</td><td class="n">0.80</td><td class="n">0.10</td><td class="n">0.66</td></tr>
+      <tr class="hl"><td>Gradient Boosting</td><td class="n">0.81</td><td class="n">0.07</td><td class="n">0.68</td></tr>
+      <tr><td>Decision tree (depth 3)</td><td class="n">0.62</td><td class="n">0.09</td><td class="n">0.61</td></tr>
+    </table></div>
+    <p>Both learned models put about five more declining pages into the top 50 than the rule does. The two are tied within fold-to-fold noise, so the simpler Logistic Regression is used for the playbook. The gain is uneven: Gradient Boosting wins clearly on the largest client (0.92 vs 0.66) and loses to the rule on another fold (0.76 vs 0.84).</p>
+    <figure>
+      <img src="img/paper_fig1_model_vs_baseline.png" alt="Bar chart of precision at 50 under a client-grouped split: random order 0.57, CTR rule 0.75, Logistic Regression 0.80, Gradient Boosting 0.81; black marks show the same models under a random split at 0.70, 0.86 and 0.94.">
+      <figcaption><b>Figure 1.</b> Precision@50 under the client-grouped split (bars) and the same models under a random split (black marks). A random split inflates Gradient Boosting from 0.81 to 0.94 by letting it learn each client's habits; the grouped numbers are the ones reported.</figcaption>
+    </figure>
+    <h3>The signal that holds: CTR for its position</h3>
+    <figure>
+      <img src="img/paper_fig2_ctr_signal.png" alt="Bar chart of decline rate by CTR quintile relative to position among visible pages, falling from 0.74 in the lowest quintile to 0.49 in the highest.">
+      <figcaption><b>Figure 2.</b> Among visible pages (≥500 impressions, positions 1–20), pages with the lowest CTR for their position declined most often (0.74) and those with the highest least often (0.49). The step-down pattern held inside 14 of 17 clients.</figcaption>
+    </figure>
+    <h3>What the model leans on</h3>
+    <p>Permutation importance on held-out folds ranks <b>days with impressions</b> first, then <b>average position</b> and <b>content age</b>, followed by CTR and impressions. The top feature partly encodes whether a page <em>can</em> decline at all (a page with almost no visible days often has nothing to lose). Removing the day-count columns lowers P@50 only from 0.81 to 0.80, so the result does not rest on them.</p>
+    <h3>Where the skill comes from</h3>
+    <figure>
+      <img src="img/paper_fig3_window_check.png" alt="Horizontal bar chart of precision at 50: static metadata only 0.50, base rate 0.54, CTR rule 0.75, all features 0.81.">
+      <figcaption><b>Figure 3.</b> With static metadata only (age, staleness, word count, keyword data) the model reaches 0.50, below the 0.54 base rate. Nearly all of the skill, for the rule and the model alike, comes from 90-day traffic signals that overlap the label's 30-day windows.</figcaption>
+    </figure>
+    <h3>What the errors look like</h3>
+    <p><b>Confident false alarms</b> are pages at position ~2 with 2,000–4,800 impressions and only 3 clicks, about 140 days old. They look exactly like decaying pages but simply held steady between the two 30-day windows. <b>Missed declines</b> are pages with a single impression in 90 days: going from 1 impression to 0 counts as "down". Of the 3,746 pages with fewer than 10 impressions, 753 carry the "declining" label, which is label noise rather than a modeling failure.</p>
+
+    <h2 id="limitations"><span class="num">5</span>Limitations and honest framing</h2>
+    <ul>
+      <li><b>Describes decline in progress more than it forecasts it.</b> The features are 90-day totals that contain the label's two 30-day windows (Figure 3). A time-aware design (features from earlier days, label from later days, on the warehouse release) is the next step to test a true forecast.</li>
+      <li><b>Not causal.</b> Nothing here shows that refreshing a page causes recovery. That would need a before/after design with a matched control group or an experiment.</li>
+      <li><b>One snapshot, one slice.</b> 30,000 pages from 32 clients, content aged 90–564 days. Results may not hold for other clients, content types or periods, and fold-to-fold spread is large (sd 0.07–0.13).</li>
+      <li><b>Noisy label for small pages.</b> One impression can flip the label below about 10 impressions.</li>
+      <li><b>Uneven clients.</b> One client holds 23% of pages; a per-client cap in the playbook limits its weight in the weekly list.</li>
+      <li><b>Modest gain.</b> The learned models add about 5 points of P@50 over a three-column rule. The rule is a reasonable fallback if the model cannot be maintained.</li>
+    </ul>
+    <div class="note">Claims on this page are observed and measured in one dataset. The ranking is decision support for choosing what to review first; it does not predict Google's ranking system.</div>
+
+    <h2 id="recommendations"><span class="num">6</span>Ranked recommendations: the action playbook</h2>
+    <p>Each page gets an archetype from transparent rules, a reason code and one action. The weekly batch is the 50 highest-priority actionable pages, at most 10 per client.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Archetype</th><th>Reason code</th><th>Action</th><th class="n">n</th><th class="n">decline</th></tr>
+      <tr><td>A1 zero clicks on big visibility</td><td>possible_tracking_issue</td><td>check tracking before editing</td><td class="n">32</td><td class="n">0.75</td></tr>
+      <tr><td>A2 visible but under-clicked</td><td>low_ctr_for_position</td><td>rewrite title and meta</td><td class="n">5,799</td><td class="n">0.67</td></tr>
+      <tr><td>A3 striking distance (11–20)</td><td>near_page_one</td><td>refresh content, internal links</td><td class="n">2,300</td><td class="n">0.57</td></tr>
+      <tr><td>A4 healthy page-one asset</td><td>protect_page_one</td><td>light fact-check refresh</td><td class="n">3,892</td><td class="n">0.51</td></tr>
+      <tr><td>A5 deep or no ranking</td><td>low_visibility</td><td>deprioritize or consolidate</td><td class="n">6,915</td><td class="n">0.55</td></tr>
+      <tr><td>A6 small but ranking (100–499)</td><td>small_but_ranking</td><td>batch review later</td><td class="n">3,068</td><td class="n">0.70</td></tr>
+      <tr><td>A0 tiny / noisy (&lt;100)</td><td>too_little_data</td><td>no action, monitor</td><td class="n">7,994</td><td class="n">0.39</td></tr>
+    </table></div>
+    <figure>
+      <img src="img/w07_playbook_insights.png" alt="Left: decline rate by archetype, highest for zero-click and under-clicked pages; right: decline rate by content age, highest for the youngest pages.">
+      <figcaption><b>Figure 4.</b> Measured decline rate by archetype (left) and by content age (right). Under-clicked visible pages and younger pages declined most often in this data.</figcaption>
+    </figure>
+    <h3>In priority order</h3>
+    <ol>
+      <li><b>Check tracking first on zero-click pages.</b> 38 of this week's 50 pages had no clicks in 90 days. Confirm clicks are not credited to another URL (canonical, redirect) before editing anything.</li>
+      <li><b>Rewrite titles and descriptions on visible, under-clicked pages.</b> This is the strongest signal observed (Figure 2), and the cheapest action (about 45 minutes per page).</li>
+      <li><b>Look at the search results before rewriting.</b> If ads, an AI overview or a featured snippet take the clicks, a new title will not help; skip the page.</li>
+      <li><b>Do not refresh by age alone.</b> Older pages declined <em>less</em> in this data, and the stale-page flag had too few cases to confirm.</li>
+      <li><b>Leave tiny pages alone.</b> Below 100 impressions the label is mostly noise and there is little traffic to recover.</li>
+    </ol>
+    <p><b>Cost and value (stated assumptions).</b> The batch costs about 34 editor-hours. In hindsight, about 39 of the 50 pages were declining, against about 30 for 50 actionable pages chosen at random. Captured click value (clicks × CPC) is only about $12, because these pages get almost no clicks; the case for acting is roughly 700,000 impressions of visibility at stake, not revenue.</p>
+    <h3>Never automated</h3>
+    <ul>
+      <li>Publishing any change without an editor reading the page.</li>
+      <li>Deleting, noindexing or redirecting a page because of its score.</li>
+      <li>Re-editing a page updated in the last 14 days.</li>
+      <li>Using the score to judge writers, clients or AI providers.</li>
+      <li>Applying the list to new clients or content types without re-validating.</li>
+    </ul>
+    <p><b>Re-check triggers.</b> Re-validate monthly with a grouped split; retrain at least quarterly or after a Google core update; fall back to the CTR rule if last month's batch hit rate drops below 0.75, or if the median CTR of visible pages shifts by more than 30%.</p>
+
+    <h2 id="reproducibility"><span class="num">7</span>Reproducibility</h2>
+    <p>Everything is in the public repository <a href="https://github.com/begs44/flyrank-ml">github.com/begs44/flyrank-ml</a>. Each notebook opens in Google Colab from its badge and reruns top to bottom in about a minute; the seed is fixed at 42, and results were identical under scikit-learn 1.6.1 and 1.7.2.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Step</th><th>Notebook</th></tr>
+      <tr><td>Signal audit</td><td><a href="https://github.com/begs44/flyrank-ml/blob/main/work/notebooks/w04_signal_audit.ipynb">w04_signal_audit.ipynb</a></td></tr>
+      <tr><td>Rule baseline</td><td><a href="https://github.com/begs44/flyrank-ml/blob/main/work/notebooks/w04_baseline_score.ipynb">w04_baseline_score.ipynb</a></td></tr>
+      <tr><td>Models vs baseline</td><td><a href="https://github.com/begs44/flyrank-ml/blob/main/work/notebooks/w05_model.ipynb">w05_model.ipynb</a></td></tr>
+      <tr><td>Validation and leakage audit</td><td><a href="https://github.com/begs44/flyrank-ml/blob/main/work/notebooks/w06_validation_audit.ipynb">w06_validation_audit.ipynb</a></td></tr>
+      <tr><td>Action playbook</td><td><a href="https://github.com/begs44/flyrank-ml/blob/main/work/notebooks/w07_action_playbook.ipynb">w07_action_playbook.ipynb</a></td></tr>
+      <tr><td>Capstone (all figures on this page)</td><td><a href="https://github.com/begs44/flyrank-ml/blob/main/work/notebooks/capstone.ipynb">capstone.ipynb</a></td></tr>
+    </table></div>
+    <p>The ranked queue is regenerated on every run and is not committed (data files stay out of the public repository). Metric receipts are committed in <code>work/outputs/</code>.</p>
+
+    <h2 id="acknowledgments"><span class="num">8</span>Acknowledgments and data credit</h2>
+    <p>Built on the <a href="https://flyrank.ai" target="_blank" rel="noopener">FlyRank ML Internship dataset</a>. Thanks to the FlyRank ML track team for the dataset, the weekly sessions and the research paper whose methods this work learned from. All client data is pseudonymized; no client names, URLs or search queries are shown.</p>
+
+    <footer>© 2026 Bengüsu İlhan · Code under MIT license · Data used under the internship's data-use terms.</footer>
+  </main>
+</div>
+</body>
+</html>
