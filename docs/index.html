@@ -174,19 +174,19 @@
     </table></div>
     <p>Both learned models put about five more declining pages into the top 50 than the rule does. The two are tied within fold-to-fold noise, so the simpler Logistic Regression is used for the playbook. The gain is uneven: Gradient Boosting wins clearly on the largest client (0.92 vs 0.66) and loses to the rule on another fold (0.76 vs 0.84).</p>
     <figure>
-      <img src="img/paper_fig1_model_vs_baseline.png" alt="Bar chart of precision at 50 under a client-grouped split: random order 0.57, CTR rule 0.75, Logistic Regression 0.80, Gradient Boosting 0.81; black marks show the same models under a random split at 0.70, 0.86 and 0.94.">
+      <img src="paper_fig1_model_vs_baseline.png" alt="Bar chart of precision at 50 under a client-grouped split: random order 0.57, CTR rule 0.75, Logistic Regression 0.80, Gradient Boosting 0.81; black marks show the same models under a random split at 0.70, 0.86 and 0.94.">
       <figcaption><b>Figure 1.</b> Precision@50 under the client-grouped split (bars) and the same models under a random split (black marks). A random split inflates Gradient Boosting from 0.81 to 0.94 by letting it learn each client's habits; the grouped numbers are the ones reported.</figcaption>
     </figure>
     <h3>The signal that holds: CTR for its position</h3>
     <figure>
-      <img src="img/paper_fig2_ctr_signal.png" alt="Bar chart of decline rate by CTR quintile relative to position among visible pages, falling from 0.74 in the lowest quintile to 0.49 in the highest.">
+      <img src="paper_fig2_ctr_signal.png" alt="Bar chart of decline rate by CTR quintile relative to position among visible pages, falling from 0.74 in the lowest quintile to 0.49 in the highest.">
       <figcaption><b>Figure 2.</b> Among visible pages (≥500 impressions, positions 1–20), pages with the lowest CTR for their position declined most often (0.74) and those with the highest least often (0.49). The step-down pattern held inside 14 of 17 clients.</figcaption>
     </figure>
     <h3>What the model leans on</h3>
     <p>Permutation importance on held-out folds ranks <b>days with impressions</b> first, then <b>average position</b> and <b>content age</b>, followed by CTR and impressions. The top feature partly encodes whether a page <em>can</em> decline at all (a page with almost no visible days often has nothing to lose). Removing the day-count columns lowers P@50 only from 0.81 to 0.80, so the result does not rest on them.</p>
     <h3>Where the skill comes from</h3>
     <figure>
-      <img src="img/paper_fig3_window_check.png" alt="Horizontal bar chart of precision at 50: static metadata only 0.50, base rate 0.54, CTR rule 0.75, all features 0.81.">
+      <img src="paper_fig3_window_check.png" alt="Horizontal bar chart of precision at 50: static metadata only 0.50, base rate 0.54, CTR rule 0.75, all features 0.81.">
       <figcaption><b>Figure 3.</b> With static metadata only (age, staleness, word count, keyword data) the model reaches 0.50, below the 0.54 base rate. Nearly all of the skill, for the rule and the model alike, comes from 90-day traffic signals that overlap the label's 30-day windows.</figcaption>
     </figure>
     <h3>What the errors look like</h3>
@@ -216,7 +216,7 @@
       <tr><td>A0 tiny / noisy (&lt;100)</td><td>too_little_data</td><td>no action, monitor</td><td class="n">7,994</td><td class="n">0.39</td></tr>
     </table></div>
     <figure>
-      <img src="img/w07_playbook_insights.png" alt="Left: decline rate by archetype, highest for zero-click and under-clicked pages; right: decline rate by content age, highest for the youngest pages.">
+      <img src="w07_playbook_insights.png" alt="Left: decline rate by archetype, highest for zero-click and under-clicked pages; right: decline rate by content age, highest for the youngest pages.">
       <figcaption><b>Figure 4.</b> Measured decline rate by archetype (left) and by content age (right). Under-clicked visible pages and younger pages declined most often in this data.</figcaption>
     </figure>
     <h3>In priority order</h3>
