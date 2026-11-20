@@ -1,0 +1,56 @@
+{
+  "notebook": "w07_action_playbook",
+  "model": "LogisticRegression C=0.5, grouped 5-fold OOF by client",
+  "capacity": 50,
+  "client_cap": 10,
+  "rows": 30000,
+  "actionable": 12023,
+  "batch_hours_estimate": 34.25,
+  "archetypes": [
+    {
+      "archetype": "A0 tiny / noisy page",
+      "pages": 7994,
+      "measured_decline_rate": 0.389
+    },
+    {
+      "archetype": "A1 zero clicks on big visibility",
+      "pages": 32,
+      "measured_decline_rate": 0.75
+    },
+    {
+      "archetype": "A2 visible but under-clicked",
+      "pages": 5799,
+      "measured_decline_rate": 0.665
+    },
+    {
+      "archetype": "A3 striking distance (11-20)",
+      "pages": 2300,
+      "measured_decline_rate": 0.572
+    },
+    {
+      "archetype": "A4 healthy page-one asset",
+      "pages": 3892,
+      "measured_decline_rate": 0.514
+    },
+    {
+      "archetype": "A5 deep or no ranking",
+      "pages": 6915,
+      "measured_decline_rate": 0.55
+    },
+    {
+      "archetype": "A6 small but ranking (100-499 impr.)",
+      "pages": 3068,
+      "measured_decline_rate": 0.701
+    }
+  ],
+  "reference": {
+    "base_rate": 0.542,
+    "batch_decline_rate": 0.78,
+    "grouped_cv_p_at_50_lr": 0.8,
+    "rule_baseline_p_at_50": 0.752,
+    "share_visible_under_clicked": 0.193,
+    "median_ctr_visible": 0.21,
+    "median_position_visible": 8.2,
+    "share_tiny_pages": 0.266
+  }
+}
